@@ -6,15 +6,14 @@ class NewsController {
   // buat fungsi
 
   async index(req, res) {
-    // memanggil method static all dengan async await.
-    const news = await News.all();
-
-    const data = {
-      message: "Get All Resource",
-      data: news,
-    };
-
-    res.json(data);
+    try {
+      const news = await News.all();
+      res.json({ message: "Get All Resource", data: news });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error fetching news", error: error.message });
+    }
   }
 
   static create(data) {
@@ -32,137 +31,127 @@ class NewsController {
   }
 
   async store(req, res) {
-    const news = await News.create(req.body);
-
-    const data = {
-      message: "Resource is added successfully",
-      data: news,
-    };
-
-    res.json(data);
+    try {
+      const news = await News.create(req.body);
+      res.json({ message: "Resource is added successfully", data: news });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error adding news", error: error.message });
+    }
   }
 
   async update(req, res) {
     try {
       const { id } = req.params;
-
-      // Cari news berdasarkan ID
       const news = await News.find(id);
-
       if (!news) {
-        return res.status(404).json({
-          message: "Resource not found",
-          data: null,
-        });
+        return res
+          .status(404)
+          .json({ message: "Resource not found", data: null });
       }
-
-      // Update news
-      const updateNews = await News.update(id, req.body);
-
-      const data = {
-        message: "Resource is update successfully",
-        data: updateNews,
-      };
-
-      res.status(200).json(data);
+      const updatedNews = await News.update(id, req.body);
+      res.json({ message: "Resource updated successfully", data: updatedNews });
     } catch (error) {
-      res.status(404).json({
-        message: "Resource not found",
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json({ message: "Error updating news", error: error.message });
     }
   }
 
   async destroy(req, res) {
-    const { id } = req.params;
-    const news = await News.find(id);
-
-    if (news) {
+    try {
+      const { id } = req.params;
+      const news = await News.find(id);
+      if (!news) {
+        return res
+          .status(404)
+          .json({ message: "Resource not found", data: null });
+      }
       await News.delete(id);
-      const data = {
-        message: "Resource is delete successfully",
-        data: null,
-      };
-      res.status(200).json(data);
-    } else {
-      const data = {
-        message: "Resource not found",
-        data: null,
-      };
-      res.status(404).json(data);
+      res.json({ message: "Resource deleted successfully", data: null });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error deleting news", error: error.message });
     }
   }
 
   async show(req, res) {
     try {
-      const { title } = req.params; // Ambil parameter `title` dari URL
-
-      if (!title) {
-        return res.status(400).json({
-          message: "Parameter title diperlukan",
-          data: null,
-        });
+      const { id } = req.params;
+      const news = await News.find(id);
+      if (!news) {
+        return res
+          .status(404)
+          .json({ message: "Resource not found", data: null });
       }
-
-      // Cari students berdasarkan title
-      const news = await News.findByName(title);
-
-      if (news.length === 0) {
-        return res.status(404).json({
-          message: `Resource not found '${title}'`,
-          data: null,
-        });
-      }
-
-      const data = {
-        message: `Get detail resource '${title}'`,
-        data: students,
-      };
-
-      res.status(200).json(data);
+      res.json({ message: "Get detail resource", data: news });
     } catch (error) {
-      console.error("Error saat mencari berdasarkan title:", error); // Debugging
-      res.status(500).json({
-        message: "Error saat mencari news",
-        error: error.message,
-      });
+      res
+        .status(500)
+        .json({ message: "Error fetching news", error: error.message });
+    }
+  }
+
+  async search(req, res) {
+    try {
+      const { title } = req.params;
+      const news = await News.search(title);
+      if (news.length === 0) {
+        return res
+          .status(404)
+          .json({ message: `No news found with title '${title}'`, data: null });
+      }
+      res.json({ message: "Search results", data: news });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error searching news", error: error.message });
     }
   }
 
   async findByCategory(req, res) {
     try {
-      const { category } = req.params; // Ambil parameter `jurusan` dari URL
-
-      if (!category) {
-        return res.status(400).json({
-          message: "Parameter category diperlukan",
-          data: null,
-        });
-      }
-
-      // Cari students berdasarkan jurusan
+      const { category } = req.params;
       const news = await News.findByCategory(category);
-
       if (news.length === 0) {
         return res.status(404).json({
-          message: `Resource not found '${category}'`,
+          message: `No news found in category '${category}'`,
           data: null,
         });
       }
-
-      const data = {
-        message: `Menampilkan students dengan jurusan '${category}'`,
-        data: students,
-      };
-
-      res.status(200).json(data);
+      res.json({ message: `Get category '${category}' resource`, data: news });
     } catch (error) {
-      console.error("Error saat mencari berdasarkan jurusan:", error); // Debugging
       res.status(500).json({
-        message: "Error saat mencari students",
+        message: "Error fetching category news",
         error: error.message,
       });
     }
+  }
+
+  async getCategory(req, res, category) {
+    try {
+      const news = await News.findByCategory(category);
+      res.json({ message: `Get '${category}' resource`, data: news });
+    } catch (error) {
+      res.status(500).json({
+        message: `Error fetching '${category}' news`,
+        error: error.message,
+      });
+    }
+  }
+
+  async sport(req, res) {
+    return this.getCategory(req, res, "sport");
+  }
+
+  async finance(req, res) {
+    return this.getCategory(req, res, "finance");
+  }
+
+  async automotive(req, res) {
+    return this.getCategory(req, res, "automotive");
   }
 }
 
